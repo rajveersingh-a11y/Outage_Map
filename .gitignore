@@ -4,6 +4,10 @@
 *.xlsb
 *.csv
 
+# ---- Project-specific data (explicit) ----
+Mapping/kashi_*outage*.csv
+Mapping/*part*.csv
+
 # ---- Generated / scratch ----
 Mapping/dashboard2_data/
 Mapping/outage_dashboard2_data.json
