@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Outage Dashboard 2</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f6f8fa;color:#1f2328;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:#ffffff;border-bottom:1px solid #d0d7de;padding:0 16px;display:flex;align-items:center;gap:12px;height:52px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+header h1{font-size:13px;font-weight:600;color:#1f2328;white-space:nowrap}
+.badge{background:#0969da;color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;letter-spacing:.4px;flex-shrink:0}
+.view-toggle{display:flex;gap:1px;background:#eaeef2;border:1px solid #d0d7de;border-radius:8px;padding:3px;flex-shrink:0}
+.vbtn{padding:4px 14px;border-radius:6px;border:none;background:transparent;color:#656d76;font-size:11px;font-weight:500;cursor:pointer;transition:.15s}
+.vbtn.active{background:#ffffff;color:#0969da;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.hdr-stats{display:flex;gap:20px;margin-left:auto}
+.hdr-stat{text-align:right}
+.hdr-stat-val{font-size:16px;font-weight:700;color:#0969da}
+.hdr-stat-lbl{font-size:9px;color:#8c959f;text-transform:uppercase;letter-spacing:.4px}
+.layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:230px;background:#ffffff;border-right:1px solid #d0d7de;display:flex;flex-direction:column;flex-shrink:0}
+.search-wrap{padding:8px;border-bottom:1px solid #eaeef2}
+.search-wrap input{width:100%;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:5px 9px;color:#1f2328;font-size:11px;outline:none;transition:.15s}
+.search-wrap input:focus{border-color:#0969da;background:#fff}
+.show-all-btn{margin:6px 8px 2px;padding:5px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;color:#0969da;font-size:10px;font-weight:500;cursor:pointer;text-align:center;transition:.15s}
+.sel-count{padding:2px 10px;font-size:9px;color:#8c959f}
+.device-list{flex:1;overflow-y:auto;padding:2px 0}
+.dev-item{padding:5px 10px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:6px;border-left:2px solid transparent;transition:.1s}
+.dev-item:hover{background:#f6f8fa}
+.dev-item.sel{background:#dbeafe;border-left-color:#0969da;color:#0969da}
+.dev-name{flex:1;font-family:'Courier New',monospace;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dev-pct{font-size:9px;color:#8c959f;white-space:nowrap}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#view-tl{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.chart-area{flex:1;min-height:0;position:relative;background:#fff}
+#heatmap{width:100%;height:100%}
+.detail{height:190px;border-top:1px solid #d0d7de;background:#fff}
+.detail-hdr{padding:6px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #eaeef2}
+.detail-id{font-size:12px;font-weight:600;font-family:'Courier New',monospace;color:#0969da}
+.detail-meta{font-size:10px;color:#8c959f;flex:1}
+#detailPlot{height:150px}
+#view-verify{flex:1;display:none;flex-direction:column;overflow:hidden;min-height:0;background:#fff}
+.vfy-controls{padding:8px 14px;background:#f6f8fa;border-bottom:1px solid #d0d7de;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+.vfy-select{padding:4px 8px;border:1px solid #d0d7de;border-radius:6px;background:#fff;font-size:11px;color:#1f2328;font-family:'Courier New',monospace;outline:none;cursor:pointer;max-width:220px}
+#verifyPlot{flex:1;min-height:0}
+</style>
+</head>
+<body>
+<header>
+  <span class="badge">AMI</span>
+  <h1>Outage Dashboard 2 – April 2026</h1>
+  <div class="view-toggle">
+    <button class="vbtn active" id="bTL" onclick="setView('tl')">⏱ Timeline</button>
+    <button class="vbtn" id="bV" onclick="setView('v')">🔍 Verify</button>
+  </div>
+  <div class="hdr-stats">
+    <div class="hdr-stat"><div class="hdr-stat-val" id="sf">—</div><div class="hdr-stat-lbl">Feeders</div></div>
+    <div class="hdr-stat"><div class="hdr-stat-val" id="sb">—</div><div class="hdr-stat-lbl">With Blockload</div></div>
+  </div>
+</header>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="search-wrap"><input id="q" placeholder="Search feeder ID…" oninput="reloadList()"/></div>
+    <div class="show-all-btn" onclick="selectTop()">▶ Show top feeders</div>
+    <div class="sel-count" id="sel"></div>
+    <div class="device-list" id="list"></div>
+  </aside>
+  <main class="main">
+    <div id="view-tl">
+      <div class="chart-area"><div id="heatmap"></div></div>
+      <div class="detail">
+        <div class="detail-hdr"><span class="detail-id" id="did">—</span><span class="detail-meta" id="dmeta"></span></div>
+        <div id="detailPlot"></div>
+      </div>
+    </div>
+    <div id="view-verify">
+      <div class="vfy-controls">
+        <span style="font-size:11px;color:#656d76">Feeder</span>
+        <select id="vf" class="vfy-select" onchange="renderVerify()"><option value="">— pick —</option></select>
+      </div>
+      <div id="verifyPlot"></div>
+    </div>
+  </main>
+</div>
+<script>
+let META=null, LIST=[], SEL=new Set(), VIEW='tl';
+function setView(v){
+  VIEW=v;
+  document.getElementById('bTL').classList.toggle('active', v==='tl');
+  document.getElementById('bV').classList.toggle('active', v==='v');
+  document.getElementById('view-tl').style.display = v==='tl' ? 'flex' : 'none';
+  document.getElementById('view-verify').style.display = v==='v' ? 'flex' : 'none';
+  if(v==='v') renderVerify(); else renderHeatmap();
+}
+function toTS30(ivs){
+  const a=new Int8Array(META.n_half);
+  if(!ivs) return a;
+  for(const [s,e] of ivs){
+    const ss=Math.max(0, Math.floor(s*2));
+    const ee=Math.min(META.n_half, Math.ceil(e*2));
+    for(let i=ss;i<ee;i++) a[i]=1;
+  }
+  return a;
+}
+function combo(outIvs, czIvs){
+  const o=toTS30(outIvs), c=toTS30(czIvs);
+  const a=new Float32Array(META.n_half);
+  for(let i=0;i<META.n_half;i++) a[i]= o[i]&&c[i]?1: c[i]?2/3: o[i]?1/3:0;
+  return a;
+}
+const CS=[[0,'#f0f3f6'],[0.28,'#f0f3f6'],[0.29,'#fa8072'],[0.61,'#fa8072'],[0.62,'#1a7f37'],[0.94,'#1a7f37'],[0.95,'#d73a49'],[1,'#d73a49']];
+async function init(){
+  const statusEl = document.getElementById('dmeta');
+  // keep polling until API finished loading
+  for(;;){
+    try{
+      META = await (await fetch('/api/meta', {cache:'no-store'})).json();
+      if(META.error){
+        statusEl.textContent = 'API error: ' + META.error;
+        return;
+      }
+      if(!META.loading){
+        break;
+      }
+      document.getElementById('sf').textContent = '…';
+      document.getElementById('sb').textContent = '…';
+      statusEl.textContent = 'Loading data from XLSB… (this can take a few minutes)';
+    }catch(e){
+      statusEl.textContent = 'Connecting to API…';
+    }
+    await new Promise(r=>setTimeout(r, 2000));
+  }
+
+  document.getElementById('sf').textContent = META.feeders.toLocaleString();
+  document.getElementById('sb').textContent = META.feeders_with_blockload.toLocaleString();
+  statusEl.textContent = '';
+  await reloadList();
+}
+async function reloadList(){
+  const q=document.getElementById('q').value||'';
+  const r=await fetch('/api/feeders?q='+encodeURIComponent(q)+'&limit=800&offset=0', {cache:'no-store'});
+  const j=await r.json();
+  LIST=j.items||[];
+  const root=document.getElementById('list');
+  root.innerHTML='';
+  LIST.forEach(it=>{
+    const div=document.createElement('div');
+    div.className='dev-item'+(SEL.has(it.id)?' sel':'');
+    div.innerHTML = `<span class="dev-name" title="${it.id}">${it.id}</span><span class="dev-pct">${(it.pct*100).toFixed(1)}%</span>`;
+    div.onclick=()=>{ if(SEL.has(it.id)) SEL.delete(it.id); else SEL.add(it.id); updateSel(); if(VIEW==='v') renderVerify(); else renderHeatmap(); reloadList(); };
+    root.appendChild(div);
+  });
+  updateSel();
+  const vf=document.getElementById('vf');
+  if(vf.options.length<=1){
+    const all = await (await fetch('/api/feeders?limit=2000&offset=0', {cache:'no-store'})).json();
+    (all.items||[]).forEach(it=>{ const o=document.createElement('option'); o.value=it.id; o.textContent=it.id; vf.appendChild(o); });
+  }
+}
+function updateSel(){ document.getElementById('sel').textContent = SEL.size ? `${SEL.size} selected` : ''; }
+function selectTop(){ SEL.clear(); LIST.slice(0,120).forEach(it=>SEL.add(it.id)); updateSel(); if(VIEW==='v') renderVerify(); else renderHeatmap(); reloadList(); }
+async function renderHeatmap(){
+  const ids=Array.from(SEL);
+  if(!ids.length){ Plotly.purge('heatmap'); Plotly.purge('detailPlot'); document.getElementById('did').textContent='—'; document.getElementById('dmeta').textContent=''; return; }
+  const X=Array.from({length:META.n_half}, (_,i)=>i);
+  const TV=Array.from({length:30}, (_,i)=>i*48);
+  const TT=Array.from({length:30}, (_,i)=>`Apr ${i+1}`);
+  const rows=[];
+  for(const id of ids){
+    const d=await (await fetch('/api/feeder?id='+encodeURIComponent(id), {cache:'no-store'})).json();
+    rows.push({id, z:Array.from(combo(d.outage_ivs, d.cz_ivs))});
+  }
+  Plotly.react('heatmap', [{type:'heatmap', z: rows.map(r=>r.z), y: rows.map(r=>r.id), x: X, colorscale: CS, zmin:0, zmax:1, showscale:true, colorbar:{tickvals:[0,1/3,2/3,1], ticktext:['Normal','Outage(I>0)','I=0 only','Outage+I=0'], tickfont:{size:9}, len:0.5, thickness:10, x:1.02}, xgap:0, ygap: ids.length>60?0:ids.length>20?0.5:1 }], {paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:140,r:90,t:10,b:46}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:10,color:'#8c959f'}}, yaxis:{automargin:true, tickfont:{size:9,family:'Courier New',color:'#1f2328'}}}, {responsive:true,displayModeBar:true,modeBarButtonsToRemove:['select2d','lasso2d','toImage'],displaylogo:false});
+  document.getElementById('heatmap').on('plotly_click', ev=>{ if(ev.points&&ev.points.length) showDetail(ev.points[0].y); });
+  if(ids.length===1) showDetail(ids[0]);
+}
+async function showDetail(id){
+  const d=await (await fetch('/api/feeder?id='+encodeURIComponent(id), {cache:'no-store'})).json();
+  document.getElementById('did').textContent=id;
+  const outTS=Array.from(toTS30(d.outage_ivs));
+  const czTS=Array.from(toTS30(d.cz_ivs));
+  let out=0, match=0; for(let i=0;i<META.n_half;i++){ if(outTS[i]) out++; if(outTS[i]&&czTS[i]) match++; }
+  document.getElementById('dmeta').textContent = out?(`Match: ${(match/out*100).toFixed(1)}% of outage slots have I=0`):'';
+  const xs=[], yo=[], yc=[];
+  for(let s=0;s<META.n_half;s++){ xs.push(s,s+1); yo.push(outTS[s],outTS[s]); yc.push(czTS[s]+1.6, czTS[s]+1.6); }
+  const TV=Array.from({length:30}, (_,i)=>i*48);
+  const TT=Array.from({length:30}, (_,i)=>`Apr ${i+1}`);
+  Plotly.react('detailPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'},{name:'Current=0', type:'scatter', mode:'lines', x:xs, y:yc, line:{color:'#1a7f37',width:2}, fill:'tonexty', fillcolor:'rgba(26,127,55,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, showlegend:true, legend:{x:0,y:1.25,orientation:'h',font:{size:10}}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,3.1], fixedrange:true, tickvals:[0,1,1.6,2.6], ticktext:['Normal','Outage','I>0','I=0'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
+}
+async function renderVerify(){
+  const vf=document.getElementById('vf').value || (SEL.size===1 ? Array.from(SEL)[0] : '');
+  if(!vf){ Plotly.purge('verifyPlot'); return; }
+  const d=await (await fetch('/api/feeder?id='+encodeURIComponent(vf), {cache:'no-store'})).json();
+  const outTS=Array.from(toTS30(d.outage_ivs));
+  const czTS=Array.from(toTS30(d.cz_ivs));
+  const xs=[], yo=[], yc=[];
+  for(let s=0;s<META.n_half;s++){ xs.push(s,s+1); yo.push(outTS[s],outTS[s]); yc.push(czTS[s]+1.6, czTS[s]+1.6); }
+  const TV=Array.from({length:30}, (_,i)=>i*48);
+  const TT=Array.from({length:30}, (_,i)=>`Apr ${i+1}`);
+  Plotly.react('verifyPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'},{name:'Current=0', type:'scatter', mode:'lines', x:xs, y:yc, line:{color:'#1a7f37',width:2}, fill:'tonexty', fillcolor:'rgba(26,127,55,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, title:{text: vf + ' — verify', font:{size:13}}, showlegend:true, legend:{x:0,y:1.25,orientation:'h',font:{size:10}}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,3.1], fixedrange:true, tickvals:[0,1,1.6,2.6], ticktext:['Normal','Outage','I>0','I=0'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
+}
+init();
+</script>
+</body>
+</html>
+

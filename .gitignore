@@ -1,0 +1,26 @@
+# ---- Data files (do not commit) ----
+*.xls
+*.xlsx
+*.xlsb
+*.csv
+
+# ---- Generated / scratch ----
+Mapping/dashboard2_data/
+Mapping/outage_dashboard2_data.json
+Mapping/*.bin
+Mapping/_test_*mb.bin
+Mapping/_big_test*.bin
+
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.python-version
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+
