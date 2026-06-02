@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -14,39 +14,41 @@ header h1{font-size:13px;font-weight:600;color:#1f2328;white-space:nowrap}
 .view-toggle{display:flex;gap:1px;background:#eaeef2;border:1px solid #d0d7de;border-radius:8px;padding:3px;flex-shrink:0}
 .vbtn{padding:4px 14px;border-radius:6px;border:none;background:transparent;color:#656d76;font-size:11px;font-weight:500;cursor:pointer;transition:.15s}
 .vbtn.active{background:#ffffff;color:#0969da;box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.hdr-stats{display:flex;gap:20px;margin-left:auto}
+.hdr-stats{display:flex;gap:16px;margin-left:auto}
 .hdr-stat{text-align:right}
-.hdr-stat-val{font-size:16px;font-weight:700;color:#0969da}
+.hdr-stat-val{font-size:15px;font-weight:700;color:#0969da}
 .hdr-stat-lbl{font-size:9px;color:#8c959f;text-transform:uppercase;letter-spacing:.4px}
 .layout{display:flex;flex:1;overflow:hidden}
 .sidebar{width:230px;background:#ffffff;border-right:1px solid #d0d7de;display:flex;flex-direction:column;flex-shrink:0}
-.tabs{display:flex;border-bottom:1px solid #eaeef2}
-.tab{flex:1;padding:9px 2px;font-size:11px;text-align:center;cursor:pointer;color:#8c959f;border-bottom:2px solid transparent;transition:.15s;font-weight:500;user-select:none}
+.tab-row{display:flex;border-bottom:1px solid #eaeef2}
+.tab{flex:1;padding:7px 4px;text-align:center;font-size:10px;font-weight:600;color:#656d76;cursor:pointer;border-bottom:2px solid transparent}
 .tab.active{color:#0969da;border-bottom-color:#0969da;background:#f6f8fa}
-.tab:hover:not(.active){color:#1f2328}
 .search-wrap{padding:8px;border-bottom:1px solid #eaeef2}
-.search-wrap input{width:100%;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:5px 9px;color:#1f2328;font-size:11px;outline:none;transition:.15s}
-.search-wrap input:focus{border-color:#0969da;background:#fff}
-.show-all-btn{margin:6px 8px 2px;padding:5px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;color:#0969da;font-size:10px;font-weight:500;cursor:pointer;text-align:center;transition:.15s}
+.search-wrap input{width:100%;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:5px 9px;color:#1f2328;font-size:11px;outline:none}
+.show-all-btn{margin:6px 8px 2px;padding:5px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;color:#0969da;font-size:10px;font-weight:500;cursor:pointer;text-align:center}
 .sel-count{padding:2px 10px;font-size:9px;color:#8c959f}
 .device-list{flex:1;overflow-y:auto;padding:2px 0}
-.dev-item{padding:5px 10px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:6px;border-left:2px solid transparent;transition:.1s}
+.dev-item{padding:5px 10px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:6px;border-left:2px solid transparent}
 .dev-item:hover{background:#f6f8fa}
 .dev-item.sel{background:#dbeafe;border-left-color:#0969da;color:#0969da}
+.dev-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-r{background:#d73a49}.dot-n{background:#d0d7de}
 .dev-name{flex:1;font-family:'Courier New',monospace;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dev-pct{font-size:9px;color:#8c959f;white-space:nowrap}
+.dev-pct{font-size:9px;color:#8c959f}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 #view-tl{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
-.chart-area{flex:1;min-height:0;position:relative;background:#fff}
-#heatmap{width:100%;height:100%}
-.detail{height:190px;border-top:1px solid #d0d7de;background:#fff}
-.detail-hdr{padding:6px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #eaeef2}
+.chart-area{flex:1;min-height:0;display:flex;flex-direction:column;background:#fff}
+#heatmap{flex:1;min-height:0}
+.legend-bar{padding:4px 12px;border-top:1px solid #eaeef2;background:#f6f8fa;font-size:10px;color:#656d76;display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0}
+.leg-swatch{width:10px;height:10px;border-radius:2px;display:inline-block;border:1px solid #d0d7de}
+.detail{height:200px;border-top:1px solid #d0d7de;background:#fff;flex-shrink:0}
+.detail-hdr{padding:6px 14px;display:flex;gap:10px;border-bottom:1px solid #eaeef2;align-items:center}
 .detail-id{font-size:12px;font-weight:600;font-family:'Courier New',monospace;color:#0969da}
-.detail-meta{font-size:10px;color:#8c959f;flex:1}
-#detailPlot{height:150px}
-#view-verify{flex:1;display:none;flex-direction:column;overflow:hidden;min-height:0;background:#fff}
-.vfy-controls{padding:8px 14px;background:#f6f8fa;border-bottom:1px solid #d0d7de;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
-.vfy-select{padding:4px 8px;border:1px solid #d0d7de;border-radius:6px;background:#fff;font-size:11px;color:#1f2328;font-family:'Courier New',monospace;outline:none;cursor:pointer;max-width:220px}
+.detail-meta{font-size:10px;color:#656d76;flex:1}
+#detailPlot{height:155px}
+#view-verify{flex:1;display:none;flex-direction:column;overflow:hidden;background:#fff}
+.vfy-controls{padding:8px 14px;background:#f6f8fa;border-bottom:1px solid #d0d7de;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.vfy-select{padding:4px 8px;border:1px solid #d0d7de;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;max-width:220px}
 #verifyPlot{flex:1;min-height:0}
 </style>
 </head>
@@ -60,33 +62,47 @@ header h1{font-size:13px;font-weight:600;color:#1f2328;white-space:nowrap}
   </div>
   <div class="hdr-stats">
     <div class="hdr-stat"><div class="hdr-stat-val" id="sf">—</div><div class="hdr-stat-lbl">Feeders</div></div>
-    <div class="hdr-stat"><div class="hdr-stat-val" id="sb">—</div><div class="hdr-stat-lbl">With Blockload</div></div>
+    <div class="hdr-stat"><div class="hdr-stat-val" id="sb">—</div><div class="hdr-stat-lbl">Blkld</div></div>
     <div class="hdr-stat"><div class="hdr-stat-val" id="sc">—</div><div class="hdr-stat-lbl">Consumers</div></div>
+    <div class="hdr-stat"><div class="hdr-stat-val" id="sg">—</div><div class="hdr-stat-lbl">Current</div></div>
   </div>
 </header>
 <div class="layout">
   <aside class="sidebar">
-    <div class="tabs">
+    <div class="tab-row">
       <div class="tab active" id="tab-feed" onclick="setTab('feeders')">Feeders</div>
       <div class="tab" id="tab-cons" onclick="setTab('consumers')">Consumers</div>
     </div>
     <div class="search-wrap"><input id="q" placeholder="Search ID…" oninput="reloadList()"/></div>
-    <div class="show-all-btn" onclick="selectTop()">▶ Show top in view</div>
+    <div class="show-all-btn" id="showTopBtn" onclick="selectTop()">▶ Show top</div>
     <div class="sel-count" id="sel"></div>
     <div class="device-list" id="list"></div>
   </aside>
   <main class="main">
     <div id="view-tl">
-      <div class="chart-area"><div id="heatmap"></div></div>
+      <div class="chart-area">
+        <div id="heatmap"></div>
+        <div class="legend-bar" id="hmLegend">
+          <span class="leg-swatch" style="background:#f0f3f6"></span> Normal
+          <span class="leg-swatch" style="background:#d73a49"></span> Outage + current
+          <span class="leg-swatch" style="background:#1a7f37"></span> Current only
+          <span class="leg-swatch" style="background:#fa8072"></span> Outage only
+          <span style="margin-left:8px;color:#8c959f">🔴 outage &nbsp; 🟢 current</span>
+        </div>
+      </div>
       <div class="detail">
-        <div class="detail-hdr"><span class="detail-id" id="did">—</span><span class="detail-meta" id="dmeta"></span></div>
+        <div class="detail-hdr">
+          <span class="detail-id" id="did">—</span>
+          <span class="detail-meta" id="dmeta"></span>
+        </div>
         <div id="detailPlot"></div>
       </div>
     </div>
     <div id="view-verify">
       <div class="vfy-controls">
-        <span style="font-size:11px;color:#656d76">Feeder</span>
+        <span style="font-size:11px;color:#656d76" id="vfyLbl">Device</span>
         <select id="vf" class="vfy-select" onchange="renderVerify()"><option value="">— pick —</option></select>
+        <span style="font-size:10px;color:#8c959f">🔴 outage (kashi) &nbsp; 🟢 current (part)</span>
       </div>
       <div id="verifyPlot"></div>
     </div>
@@ -94,6 +110,9 @@ header h1{font-size:13px;font-weight:600;color:#1f2328;white-space:nowrap}
 </div>
 <script>
 let META=null, LIST=[], SEL=new Set(), VIEW='tl', TAB='feeders';
+const COMBO_CS=[[0,'#f0f3f6'],[0.28,'#f0f3f6'],[0.29,'#fa8072'],[0.61,'#fa8072'],[0.62,'#1a7f37'],[0.94,'#1a7f37'],[0.95,'#d73a49'],[1,'#d73a49']];
+const CZ_OFF=1.6;
+
 function setView(v){
   VIEW=v;
   document.getElementById('bTL').classList.toggle('active', v==='tl');
@@ -102,17 +121,23 @@ function setView(v){
   document.getElementById('view-verify').style.display = v==='v' ? 'flex' : 'none';
   if(v==='v') renderVerify(); else renderHeatmap();
 }
+
 function setTab(t){
   TAB=t;
   SEL.clear();
   document.getElementById('tab-feed').classList.toggle('active', t==='feeders');
   document.getElementById('tab-cons').classList.toggle('active', t==='consumers');
   document.getElementById('q').value='';
-  document.getElementById('vf').innerHTML = '<option value=\"\">— pick —</option>';
+  document.getElementById('q').placeholder = t==='feeders' ? 'Search feeder ID…' : 'Search consumer ID…';
+  document.getElementById('showTopBtn').textContent = t==='feeders' ? '▶ Show top feeders' : '▶ Show top consumers';
+  document.getElementById('vf').innerHTML='<option value="">— pick —</option>';
   updateSel();
   reloadList();
   if(VIEW==='v') renderVerify(); else renderHeatmap();
 }
+
+function tabReady(){ return TAB==='feeders' ? META && META.feeders_ready : META && META.consumers_ready; }
+
 function toTS30(ivs){
   const a=new Int8Array(META.n_half);
   if(!ivs) return a;
@@ -123,133 +148,224 @@ function toTS30(ivs){
   }
   return a;
 }
-function combo(outIvs, czIvs){
+
+function toCombo30(outIvs, czIvs){
   const o=toTS30(outIvs), c=toTS30(czIvs);
   const a=new Float32Array(META.n_half);
-  for(let i=0;i<META.n_half;i++) a[i]= o[i]&&c[i]?1: c[i]?2/3: o[i]?1/3:0;
+  for(let i=0;i<META.n_half;i++){
+    if(o[i]&&c[i]) a[i]=1;
+    else if(c[i]) a[i]=2/3;
+    else if(o[i]) a[i]=1/3;
+    else a[i]=0;
+  }
   return a;
 }
-const CS_FEED=[[0,'#f0f3f6'],[0.28,'#f0f3f6'],[0.29,'#fa8072'],[0.61,'#fa8072'],[0.62,'#1a7f37'],[0.94,'#1a7f37'],[0.95,'#d73a49'],[1,'#d73a49']];
-const CS_OUT=[[0,'#f0f3f6'],[1,'#d73a49']];
+
+function comboText(v){
+  if(v===0) return 'Normal';
+  if(v<=0.34) return 'Outage only';
+  if(v<=0.68) return 'Current outage only';
+  return 'Outage + current';
+}
+
+function totalH(ivs){ return ivs ? ivs.reduce((t,[s,e])=>t+(e-s),0) : 0; }
+function fmtH(h){ return h<1 ? `${Math.round(h*60)}m` : `${h.toFixed(1)}h`; }
+
+async function refreshMeta(){
+  META=await (await fetch('/api/meta',{cache:'no-store'})).json();
+  document.getElementById('sf').textContent=(META.feeders||0).toLocaleString();
+  document.getElementById('sb').textContent=(META.feeders_with_blockload||0).toLocaleString();
+  document.getElementById('sc').textContent=(META.consumers||0).toLocaleString();
+  document.getElementById('sg').textContent=(META.consumers_with_current||0).toLocaleString();
+  return META;
+}
+
 async function init(){
-  const statusEl = document.getElementById('dmeta');
-  // keep polling until API finished loading
+  const statusEl=document.getElementById('dmeta');
   for(;;){
     try{
-      META = await (await fetch('/api/meta', {cache:'no-store'})).json();
-      if(META.error){
-        statusEl.textContent = 'API error: ' + META.error;
-        return;
-      }
-      if(!META.loading){
-        break;
-      }
-      document.getElementById('sf').textContent = '…';
-      document.getElementById('sb').textContent = '…';
-      statusEl.textContent = 'Loading data from XLSB… (this can take a few minutes)';
-    }catch(e){
-      statusEl.textContent = 'Connecting to API…';
-    }
-    await new Promise(r=>setTimeout(r, 2000));
+      await refreshMeta();
+      if(META.error){ statusEl.textContent='API error: '+META.error; return; }
+      if(META.feeders_ready) break;
+      statusEl.textContent='Loading feeders…';
+    }catch(e){ statusEl.textContent='Connecting to API…'; }
+    await new Promise(r=>setTimeout(r, 1500));
   }
-
-  document.getElementById('sf').textContent = META.feeders.toLocaleString();
-  document.getElementById('sb').textContent = META.feeders_with_blockload.toLocaleString();
-  document.getElementById('sc').textContent = (META.consumers||0).toLocaleString();
-  statusEl.textContent = '';
+  statusEl.textContent='';
   await reloadList();
+  pollConsumers();
 }
-async function reloadList(){
-  const q=document.getElementById('q').value||'';
+
+async function pollConsumers(){
+  if(META.consumers_ready) return;
+  for(let i=0;i<120;i++){
+    await new Promise(r=>setTimeout(r, 2000));
+    await refreshMeta();
+    if(META.consumers_ready){
+      if(TAB==='consumers') reloadList();
+      return;
+    }
+  }
+}
+
+function listUrl(q, limit, offset){
+  const base = TAB==='feeders' ? '/api/feeders' : '/api/consumers';
+  return `${base}?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`;
+}
+
+async function fetchDevice(id){
   const url = TAB==='feeders'
-    ? ('/api/feeders?q='+encodeURIComponent(q)+'&limit=800&offset=0')
-    : ('/api/consumers?q='+encodeURIComponent(q)+'&limit=800&offset=0');
+    ? '/api/feeder?id='+encodeURIComponent(id)
+    : '/api/consumer?id='+encodeURIComponent(id);
   const r=await fetch(url, {cache:'no-store'});
+  if(!r.ok) throw new Error(id+': '+r.status);
+  return r.json();
+}
+
+async function reloadList(){
+  if(!tabReady()){
+    await refreshMeta();
+    if(!tabReady()){
+      document.getElementById('list').innerHTML='<div class="dev-item" style="color:#656d76;padding:10px">Loading '+TAB+'…</div>';
+      await new Promise(r=>setTimeout(r, 800));
+      return reloadList();
+    }
+  }
+  const q=document.getElementById('q').value||'';
+  const r=await fetch(listUrl(q,800,0), {cache:'no-store'});
   const j=await r.json();
+  if(j.loading){
+    document.getElementById('list').innerHTML='<div class="dev-item" style="color:#656d76;padding:10px">Loading…</div>';
+    await new Promise(r=>setTimeout(r, 800));
+    return reloadList();
+  }
   LIST=j.items||[];
   const root=document.getElementById('list');
   root.innerHTML='';
   LIST.forEach(it=>{
     const div=document.createElement('div');
     div.className='dev-item'+(SEL.has(it.id)?' sel':'');
-    div.innerHTML = `<span class="dev-name" title="${it.id}">${it.id}</span><span class="dev-pct">${(it.pct*100).toFixed(1)}%</span>`;
+    const dot=it.pct>0.001?'dot-r':'dot-n';
+    div.innerHTML=`<span class="dev-dot ${dot}"></span><span class="dev-name" title="${it.id}">${it.id}</span><span class="dev-pct">${(it.pct*100).toFixed(1)}%</span>`;
     div.onclick=()=>{ if(SEL.has(it.id)) SEL.delete(it.id); else SEL.add(it.id); updateSel(); if(VIEW==='v') renderVerify(); else renderHeatmap(); reloadList(); };
     root.appendChild(div);
   });
   updateSel();
   const vf=document.getElementById('vf');
   if(vf.options.length<=1){
-    const allUrl = TAB==='feeders' ? '/api/feeders?limit=2000&offset=0' : '/api/consumers?limit=2000&offset=0';
-    const all = await (await fetch(allUrl, {cache:'no-store'})).json();
+    const all=await (await fetch(listUrl('',2000,0),{cache:'no-store'})).json();
     (all.items||[]).forEach(it=>{ const o=document.createElement('option'); o.value=it.id; o.textContent=it.id; vf.appendChild(o); });
   }
 }
-function updateSel(){ document.getElementById('sel').textContent = SEL.size ? `${SEL.size} selected` : ''; }
-function selectTop(){ SEL.clear(); LIST.slice(0,120).forEach(it=>SEL.add(it.id)); updateSel(); if(VIEW==='v') renderVerify(); else renderHeatmap(); reloadList(); }
+
+function updateSel(){ document.getElementById('sel').textContent=SEL.size?`${SEL.size} selected`:''; }
+
+function selectTop(){
+  SEL.clear();
+  LIST.slice(0,120).forEach(it=>SEL.add(it.id));
+  updateSel();
+  if(VIEW==='v') renderVerify(); else renderHeatmap();
+  reloadList();
+}
+
+function buildSignalTraces(outTS, czTS, labels){
+  const outLabel=labels.out||'Outage';
+  const curLabel=labels.cur||'Current';
+  const xs=[], outY=[], czY=[];
+  for(let s=0;s<META.n_half;s++){
+    xs.push(s,s+1);
+    outY.push(outTS[s], outTS[s]);
+    czY.push(czTS[s], czTS[s]);
+  }
+  const outDotX=[], outDotY=[], czDotX=[], czDotY=[];
+  for(let i=0;i<META.n_half;i++){
+    if(outTS[i]){ outDotX.push(i+0.5); outDotY.push(0.5); }
+    if(czTS[i]){ czDotX.push(i+0.5); czDotY.push(CZ_OFF+0.5); }
+  }
+  return {
+    data:[
+      {name:outLabel, type:'scatter', mode:'lines', x:xs, y:outY, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.18)', hoverinfo:'skip'},
+      {name:curLabel, type:'scatter', mode:'lines', x:xs, y:czY.map(v=>CZ_OFF+v), line:{color:'#1a7f37',width:2}, fill:'tozeroy', fillcolor:'rgba(26,127,55,0.18)', hoverinfo:'skip'},
+      {name:outLabel+' dots', type:'scatter', mode:'markers', x:outDotX, y:outDotY, marker:{color:'#d73a49',size:5}, text:outDotX.map(()=>'🔴 '+outLabel), hovertemplate:'%{text}<extra></extra>'},
+      {name:curLabel+' dots', type:'scatter', mode:'markers', x:czDotX, y:czDotY, marker:{color:'#1a7f37',size:5}, text:czDotX.map(()=>'🟢 '+curLabel), hovertemplate:'%{text}<extra></extra>'},
+    ],
+    layout:{
+      paper_bgcolor:'#fff', plot_bgcolor:'#f6f8fa', margin:{l:70,r:14,t:18,b:30},
+      showlegend:true, legend:{x:0,y:1.2,orientation:'h',font:{size:10}},
+      xaxis:{tickvals:Array.from({length:30},(_,i)=>i*48), ticktext:Array.from({length:30},(_,i)=>`Apr ${i+1}`), range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}},
+      yaxis:{range:[-0.1,CZ_OFF+1.3], fixedrange:true, tickvals:[0,1,CZ_OFF,CZ_OFF+1], ticktext:['Normal','Outage','—','Current'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}},
+    },
+  };
+}
+
+const signalLabels = () => TAB==='feeders'
+  ? {out:'Feeder outage', cur:'Current=0'}
+  : {out:'Consumer outage (kashi)', cur:'Current outage (part)'};
+
 async function renderHeatmap(){
   const ids=Array.from(SEL);
-  if(!ids.length){ Plotly.purge('heatmap'); Plotly.purge('detailPlot'); document.getElementById('did').textContent='—'; document.getElementById('dmeta').textContent=''; return; }
-  const X=Array.from({length:META.n_half}, (_,i)=>i);
-  const TV=Array.from({length:30}, (_,i)=>i*48);
-  const TT=Array.from({length:30}, (_,i)=>`Apr ${i+1}`);
+  if(!ids.length){
+    Plotly.purge('heatmap'); Plotly.purge('detailPlot');
+    document.getElementById('did').textContent='—';
+    document.getElementById('dmeta').textContent='Select devices from the left panel';
+    return;
+  }
+  const X=Array.from({length:META.n_half},(_,i)=>i);
+  const TV=Array.from({length:30},(_,i)=>i*48);
+  const TT=Array.from({length:30},(_,i)=>`Apr ${i+1}`);
   const rows=[];
   for(const id of ids){
-    if(TAB==='feeders'){
-      const d=await (await fetch('/api/feeder?id='+encodeURIComponent(id), {cache:'no-store'})).json();
-      rows.push({id, z:Array.from(combo(d.outage_ivs, d.cz_ivs))});
-    } else {
-      const d=await (await fetch('/api/consumer?id='+encodeURIComponent(id), {cache:'no-store'})).json();
-      rows.push({id, z:Array.from(toTS30(d.outage_ivs))});
-    }
+    try{
+      const d=await fetchDevice(id);
+      rows.push({id, z:Array.from(toCombo30(d.outage_ivs, d.cz_ivs||[]))});
+    }catch(e){ console.warn(e); }
   }
-  if(TAB==='feeders'){
-    Plotly.react('heatmap', [{type:'heatmap', z: rows.map(r=>r.z), y: rows.map(r=>r.id), x: X, colorscale: CS_FEED, zmin:0, zmax:1, showscale:true, colorbar:{tickvals:[0,1/3,2/3,1], ticktext:['Normal','Outage(I>0)','I=0 only','Outage+I=0'], tickfont:{size:9}, len:0.5, thickness:10, x:1.02}, xgap:0, ygap: ids.length>60?0:ids.length>20?0.5:1 }], {paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:140,r:90,t:10,b:46}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:10,color:'#8c959f'}}, yaxis:{automargin:true, tickfont:{size:9,family:'Courier New',color:'#1f2328'}}}, {responsive:true,displayModeBar:true,modeBarButtonsToRemove:['select2d','lasso2d','toImage'],displaylogo:false});
-  } else {
-    Plotly.react('heatmap', [{type:'heatmap', z: rows.map(r=>r.z), y: rows.map(r=>r.id), x: X, colorscale: CS_OUT, zmin:0, zmax:1, showscale:false, xgap:0, ygap: ids.length>60?0:ids.length>20?0.5:1 }], {paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:140,r:20,t:10,b:46}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:10,color:'#8c959f'}}, yaxis:{automargin:true, tickfont:{size:9,family:'Courier New',color:'#1f2328'}}}, {responsive:true,displayModeBar:true,modeBarButtonsToRemove:['select2d','lasso2d','toImage'],displaylogo:false});
-  }
+  if(!rows.length) return;
+  Plotly.react('heatmap', [{
+    type:'heatmap', z:rows.map(r=>r.z), y:rows.map(r=>r.id), x:X,
+    colorscale:COMBO_CS, zmin:0, zmax:1, showscale:true,
+    colorbar:{tickvals:[0,1/3,2/3,1], ticktext:['Normal','Outage only','Current only','Both'], tickfont:{size:9}, len:0.5, thickness:10, x:1.02},
+    text:rows.map(r=>r.z.map(comboText)), hovertemplate:'<b>%{y}</b><br>%{text}<extra></extra>',
+    xgap:0, ygap:ids.length>60?0:ids.length>20?0.5:1,
+  }], {
+    paper_bgcolor:'#fff', plot_bgcolor:'#f6f8fa', margin:{l:140,r:90,t:10,b:46},
+    xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:10,color:'#8c959f'}},
+    yaxis:{automargin:true, tickfont:{size:9,family:'Courier New',color:'#1f2328'}},
+  }, {responsive:true, displayModeBar:true, modeBarButtonsToRemove:['select2d','lasso2d','toImage'], displaylogo:false});
   document.getElementById('heatmap').on('plotly_click', ev=>{ if(ev.points&&ev.points.length) showDetail(ev.points[0].y); });
   if(ids.length===1) showDetail(ids[0]);
 }
+
 async function showDetail(id){
-  const d= TAB==='feeders'
-    ? await (await fetch('/api/feeder?id='+encodeURIComponent(id), {cache:'no-store'})).json()
-    : await (await fetch('/api/consumer?id='+encodeURIComponent(id), {cache:'no-store'})).json();
+  const d=await fetchDevice(id);
+  const labels=signalLabels();
   document.getElementById('did').textContent=id;
   const outTS=Array.from(toTS30(d.outage_ivs));
-  const czTS= TAB==='feeders' ? Array.from(toTS30(d.cz_ivs)) : null;
-  let out=0, match=0;
-  for(let i=0;i<META.n_half;i++){ if(outTS[i]) out++; if(czTS && outTS[i]&&czTS[i]) match++; }
-  document.getElementById('dmeta').textContent = TAB==='feeders' ? (out?(`Match: ${(match/out*100).toFixed(1)}% of outage slots have I=0`):'') : (out?(`Outage slots: ${out}`):'');
-  const xs=[], yo=[], yc=[];
-  for(let s=0;s<META.n_half;s++){ xs.push(s,s+1); yo.push(outTS[s],outTS[s]); if(czTS) yc.push(czTS[s]+1.6, czTS[s]+1.6); }
-  const TV=Array.from({length:30}, (_,i)=>i*48);
-  const TT=Array.from({length:30}, (_,i)=>`Apr ${i+1}`);
-  if(TAB==='feeders'){
-    Plotly.react('detailPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'},{name:'Current=0', type:'scatter', mode:'lines', x:xs, y:yc, line:{color:'#1a7f37',width:2}, fill:'tonexty', fillcolor:'rgba(26,127,55,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, showlegend:true, legend:{x:0,y:1.25,orientation:'h',font:{size:10}}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,3.1], fixedrange:true, tickvals:[0,1,1.6,2.6], ticktext:['Normal','Outage','I>0','I=0'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
-  } else {
-    Plotly.react('detailPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, showlegend:false, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,1.4], fixedrange:true, tickvals:[0,1], ticktext:['Normal','Outage'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
-  }
+  const czTS=Array.from(toTS30(d.cz_ivs||[]));
+  const outH=totalH(d.outage_ivs), czH=totalH(d.cz_ivs);
+  let match=0, outSlots=0;
+  for(let i=0;i<META.n_half;i++){ if(outTS[i]){ outSlots++; if(czTS[i]) match++; } }
+  const matchPct=outSlots?(match/outSlots*100).toFixed(1):'—';
+  document.getElementById('dmeta').textContent=
+    `🔴 ${labels.out}: ${fmtH(outH)} (${(outH/META.n_hours*100).toFixed(1)}%)`+
+    `   🟢 ${labels.cur}: ${fmtH(czH)} (${(czH/META.n_hours*100).toFixed(1)}%)`+
+    `   Match: ${matchPct}%`;
+  const tr=buildSignalTraces(outTS, czTS, labels);
+  Plotly.react('detailPlot', tr.data, tr.layout, {responsive:true, displayModeBar:false});
 }
+
 async function renderVerify(){
-  const vf=document.getElementById('vf').value || (SEL.size===1 ? Array.from(SEL)[0] : '');
+  const vf=document.getElementById('vf').value||(SEL.size===1?Array.from(SEL)[0]:'');
   if(!vf){ Plotly.purge('verifyPlot'); return; }
-  const d= TAB==='feeders'
-    ? await (await fetch('/api/feeder?id='+encodeURIComponent(vf), {cache:'no-store'})).json()
-    : await (await fetch('/api/consumer?id='+encodeURIComponent(vf), {cache:'no-store'})).json();
-  const outTS=Array.from(toTS30(d.outage_ivs));
-  const czTS= TAB==='feeders' ? Array.from(toTS30(d.cz_ivs)) : null;
-  const xs=[], yo=[], yc=[];
-  for(let s=0;s<META.n_half;s++){ xs.push(s,s+1); yo.push(outTS[s],outTS[s]); if(czTS) yc.push(czTS[s]+1.6, czTS[s]+1.6); }
-  const TV=Array.from({length:30}, (_,i)=>i*48);
-  const TT=Array.from({length:30}, (_,i)=>`Apr ${i+1}`);
-  if(TAB==='feeders'){
-    Plotly.react('verifyPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'},{name:'Current=0', type:'scatter', mode:'lines', x:xs, y:yc, line:{color:'#1a7f37',width:2}, fill:'tonexty', fillcolor:'rgba(26,127,55,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, title:{text: vf + ' — verify', font:{size:13}}, showlegend:true, legend:{x:0,y:1.25,orientation:'h',font:{size:10}}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,3.1], fixedrange:true, tickvals:[0,1,1.6,2.6], ticktext:['Normal','Outage','I>0','I=0'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
-  } else {
-    Plotly.react('verifyPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, title:{text: vf + ' — verify', font:{size:13}}, showlegend:false, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,1.4], fixedrange:true, tickvals:[0,1], ticktext:['Normal','Outage'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
-  }
+  const d=await fetchDevice(vf);
+  const labels=signalLabels();
+  const tr=buildSignalTraces(Array.from(toTS30(d.outage_ivs)), Array.from(toTS30(d.cz_ivs||[])), labels);
+  tr.layout.title={text:vf+' — verify', font:{size:13}};
+  tr.layout.margin.t=36;
+  Plotly.react('verifyPlot', tr.data, tr.layout, {responsive:true, displayModeBar:false});
 }
+
 init();
 </script>
 </body>
 </html>
-
