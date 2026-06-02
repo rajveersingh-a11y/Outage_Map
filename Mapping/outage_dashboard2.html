@@ -20,6 +20,10 @@ header h1{font-size:13px;font-weight:600;color:#1f2328;white-space:nowrap}
 .hdr-stat-lbl{font-size:9px;color:#8c959f;text-transform:uppercase;letter-spacing:.4px}
 .layout{display:flex;flex:1;overflow:hidden}
 .sidebar{width:230px;background:#ffffff;border-right:1px solid #d0d7de;display:flex;flex-direction:column;flex-shrink:0}
+.tabs{display:flex;border-bottom:1px solid #eaeef2}
+.tab{flex:1;padding:9px 2px;font-size:11px;text-align:center;cursor:pointer;color:#8c959f;border-bottom:2px solid transparent;transition:.15s;font-weight:500;user-select:none}
+.tab.active{color:#0969da;border-bottom-color:#0969da;background:#f6f8fa}
+.tab:hover:not(.active){color:#1f2328}
 .search-wrap{padding:8px;border-bottom:1px solid #eaeef2}
 .search-wrap input{width:100%;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:5px 9px;color:#1f2328;font-size:11px;outline:none;transition:.15s}
 .search-wrap input:focus{border-color:#0969da;background:#fff}
@@ -57,12 +61,17 @@ header h1{font-size:13px;font-weight:600;color:#1f2328;white-space:nowrap}
   <div class="hdr-stats">
     <div class="hdr-stat"><div class="hdr-stat-val" id="sf">—</div><div class="hdr-stat-lbl">Feeders</div></div>
     <div class="hdr-stat"><div class="hdr-stat-val" id="sb">—</div><div class="hdr-stat-lbl">With Blockload</div></div>
+    <div class="hdr-stat"><div class="hdr-stat-val" id="sc">—</div><div class="hdr-stat-lbl">Consumers</div></div>
   </div>
 </header>
 <div class="layout">
   <aside class="sidebar">
-    <div class="search-wrap"><input id="q" placeholder="Search feeder ID…" oninput="reloadList()"/></div>
-    <div class="show-all-btn" onclick="selectTop()">▶ Show top feeders</div>
+    <div class="tabs">
+      <div class="tab active" id="tab-feed" onclick="setTab('feeders')">Feeders</div>
+      <div class="tab" id="tab-cons" onclick="setTab('consumers')">Consumers</div>
+    </div>
+    <div class="search-wrap"><input id="q" placeholder="Search ID…" oninput="reloadList()"/></div>
+    <div class="show-all-btn" onclick="selectTop()">▶ Show top in view</div>
     <div class="sel-count" id="sel"></div>
     <div class="device-list" id="list"></div>
   </aside>
@@ -84,7 +93,7 @@ header h1{font-size:13px;font-weight:600;color:#1f2328;white-space:nowrap}
   </main>
 </div>
 <script>
-let META=null, LIST=[], SEL=new Set(), VIEW='tl';
+let META=null, LIST=[], SEL=new Set(), VIEW='tl', TAB='feeders';
 function setView(v){
   VIEW=v;
   document.getElementById('bTL').classList.toggle('active', v==='tl');
@@ -92,6 +101,17 @@ function setView(v){
   document.getElementById('view-tl').style.display = v==='tl' ? 'flex' : 'none';
   document.getElementById('view-verify').style.display = v==='v' ? 'flex' : 'none';
   if(v==='v') renderVerify(); else renderHeatmap();
+}
+function setTab(t){
+  TAB=t;
+  SEL.clear();
+  document.getElementById('tab-feed').classList.toggle('active', t==='feeders');
+  document.getElementById('tab-cons').classList.toggle('active', t==='consumers');
+  document.getElementById('q').value='';
+  document.getElementById('vf').innerHTML = '<option value=\"\">— pick —</option>';
+  updateSel();
+  reloadList();
+  if(VIEW==='v') renderVerify(); else renderHeatmap();
 }
 function toTS30(ivs){
   const a=new Int8Array(META.n_half);
@@ -109,7 +129,8 @@ function combo(outIvs, czIvs){
   for(let i=0;i<META.n_half;i++) a[i]= o[i]&&c[i]?1: c[i]?2/3: o[i]?1/3:0;
   return a;
 }
-const CS=[[0,'#f0f3f6'],[0.28,'#f0f3f6'],[0.29,'#fa8072'],[0.61,'#fa8072'],[0.62,'#1a7f37'],[0.94,'#1a7f37'],[0.95,'#d73a49'],[1,'#d73a49']];
+const CS_FEED=[[0,'#f0f3f6'],[0.28,'#f0f3f6'],[0.29,'#fa8072'],[0.61,'#fa8072'],[0.62,'#1a7f37'],[0.94,'#1a7f37'],[0.95,'#d73a49'],[1,'#d73a49']];
+const CS_OUT=[[0,'#f0f3f6'],[1,'#d73a49']];
 async function init(){
   const statusEl = document.getElementById('dmeta');
   // keep polling until API finished loading
@@ -134,12 +155,16 @@ async function init(){
 
   document.getElementById('sf').textContent = META.feeders.toLocaleString();
   document.getElementById('sb').textContent = META.feeders_with_blockload.toLocaleString();
+  document.getElementById('sc').textContent = (META.consumers||0).toLocaleString();
   statusEl.textContent = '';
   await reloadList();
 }
 async function reloadList(){
   const q=document.getElementById('q').value||'';
-  const r=await fetch('/api/feeders?q='+encodeURIComponent(q)+'&limit=800&offset=0', {cache:'no-store'});
+  const url = TAB==='feeders'
+    ? ('/api/feeders?q='+encodeURIComponent(q)+'&limit=800&offset=0')
+    : ('/api/consumers?q='+encodeURIComponent(q)+'&limit=800&offset=0');
+  const r=await fetch(url, {cache:'no-store'});
   const j=await r.json();
   LIST=j.items||[];
   const root=document.getElementById('list');
@@ -154,7 +179,8 @@ async function reloadList(){
   updateSel();
   const vf=document.getElementById('vf');
   if(vf.options.length<=1){
-    const all = await (await fetch('/api/feeders?limit=2000&offset=0', {cache:'no-store'})).json();
+    const allUrl = TAB==='feeders' ? '/api/feeders?limit=2000&offset=0' : '/api/consumers?limit=2000&offset=0';
+    const all = await (await fetch(allUrl, {cache:'no-store'})).json();
     (all.items||[]).forEach(it=>{ const o=document.createElement('option'); o.value=it.id; o.textContent=it.id; vf.appendChild(o); });
   }
 }
@@ -168,37 +194,59 @@ async function renderHeatmap(){
   const TT=Array.from({length:30}, (_,i)=>`Apr ${i+1}`);
   const rows=[];
   for(const id of ids){
-    const d=await (await fetch('/api/feeder?id='+encodeURIComponent(id), {cache:'no-store'})).json();
-    rows.push({id, z:Array.from(combo(d.outage_ivs, d.cz_ivs))});
+    if(TAB==='feeders'){
+      const d=await (await fetch('/api/feeder?id='+encodeURIComponent(id), {cache:'no-store'})).json();
+      rows.push({id, z:Array.from(combo(d.outage_ivs, d.cz_ivs))});
+    } else {
+      const d=await (await fetch('/api/consumer?id='+encodeURIComponent(id), {cache:'no-store'})).json();
+      rows.push({id, z:Array.from(toTS30(d.outage_ivs))});
+    }
   }
-  Plotly.react('heatmap', [{type:'heatmap', z: rows.map(r=>r.z), y: rows.map(r=>r.id), x: X, colorscale: CS, zmin:0, zmax:1, showscale:true, colorbar:{tickvals:[0,1/3,2/3,1], ticktext:['Normal','Outage(I>0)','I=0 only','Outage+I=0'], tickfont:{size:9}, len:0.5, thickness:10, x:1.02}, xgap:0, ygap: ids.length>60?0:ids.length>20?0.5:1 }], {paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:140,r:90,t:10,b:46}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:10,color:'#8c959f'}}, yaxis:{automargin:true, tickfont:{size:9,family:'Courier New',color:'#1f2328'}}}, {responsive:true,displayModeBar:true,modeBarButtonsToRemove:['select2d','lasso2d','toImage'],displaylogo:false});
+  if(TAB==='feeders'){
+    Plotly.react('heatmap', [{type:'heatmap', z: rows.map(r=>r.z), y: rows.map(r=>r.id), x: X, colorscale: CS_FEED, zmin:0, zmax:1, showscale:true, colorbar:{tickvals:[0,1/3,2/3,1], ticktext:['Normal','Outage(I>0)','I=0 only','Outage+I=0'], tickfont:{size:9}, len:0.5, thickness:10, x:1.02}, xgap:0, ygap: ids.length>60?0:ids.length>20?0.5:1 }], {paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:140,r:90,t:10,b:46}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:10,color:'#8c959f'}}, yaxis:{automargin:true, tickfont:{size:9,family:'Courier New',color:'#1f2328'}}}, {responsive:true,displayModeBar:true,modeBarButtonsToRemove:['select2d','lasso2d','toImage'],displaylogo:false});
+  } else {
+    Plotly.react('heatmap', [{type:'heatmap', z: rows.map(r=>r.z), y: rows.map(r=>r.id), x: X, colorscale: CS_OUT, zmin:0, zmax:1, showscale:false, xgap:0, ygap: ids.length>60?0:ids.length>20?0.5:1 }], {paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:140,r:20,t:10,b:46}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:10,color:'#8c959f'}}, yaxis:{automargin:true, tickfont:{size:9,family:'Courier New',color:'#1f2328'}}}, {responsive:true,displayModeBar:true,modeBarButtonsToRemove:['select2d','lasso2d','toImage'],displaylogo:false});
+  }
   document.getElementById('heatmap').on('plotly_click', ev=>{ if(ev.points&&ev.points.length) showDetail(ev.points[0].y); });
   if(ids.length===1) showDetail(ids[0]);
 }
 async function showDetail(id){
-  const d=await (await fetch('/api/feeder?id='+encodeURIComponent(id), {cache:'no-store'})).json();
+  const d= TAB==='feeders'
+    ? await (await fetch('/api/feeder?id='+encodeURIComponent(id), {cache:'no-store'})).json()
+    : await (await fetch('/api/consumer?id='+encodeURIComponent(id), {cache:'no-store'})).json();
   document.getElementById('did').textContent=id;
   const outTS=Array.from(toTS30(d.outage_ivs));
-  const czTS=Array.from(toTS30(d.cz_ivs));
-  let out=0, match=0; for(let i=0;i<META.n_half;i++){ if(outTS[i]) out++; if(outTS[i]&&czTS[i]) match++; }
-  document.getElementById('dmeta').textContent = out?(`Match: ${(match/out*100).toFixed(1)}% of outage slots have I=0`):'';
+  const czTS= TAB==='feeders' ? Array.from(toTS30(d.cz_ivs)) : null;
+  let out=0, match=0;
+  for(let i=0;i<META.n_half;i++){ if(outTS[i]) out++; if(czTS && outTS[i]&&czTS[i]) match++; }
+  document.getElementById('dmeta').textContent = TAB==='feeders' ? (out?(`Match: ${(match/out*100).toFixed(1)}% of outage slots have I=0`):'') : (out?(`Outage slots: ${out}`):'');
   const xs=[], yo=[], yc=[];
-  for(let s=0;s<META.n_half;s++){ xs.push(s,s+1); yo.push(outTS[s],outTS[s]); yc.push(czTS[s]+1.6, czTS[s]+1.6); }
+  for(let s=0;s<META.n_half;s++){ xs.push(s,s+1); yo.push(outTS[s],outTS[s]); if(czTS) yc.push(czTS[s]+1.6, czTS[s]+1.6); }
   const TV=Array.from({length:30}, (_,i)=>i*48);
   const TT=Array.from({length:30}, (_,i)=>`Apr ${i+1}`);
-  Plotly.react('detailPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'},{name:'Current=0', type:'scatter', mode:'lines', x:xs, y:yc, line:{color:'#1a7f37',width:2}, fill:'tonexty', fillcolor:'rgba(26,127,55,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, showlegend:true, legend:{x:0,y:1.25,orientation:'h',font:{size:10}}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,3.1], fixedrange:true, tickvals:[0,1,1.6,2.6], ticktext:['Normal','Outage','I>0','I=0'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
+  if(TAB==='feeders'){
+    Plotly.react('detailPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'},{name:'Current=0', type:'scatter', mode:'lines', x:xs, y:yc, line:{color:'#1a7f37',width:2}, fill:'tonexty', fillcolor:'rgba(26,127,55,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, showlegend:true, legend:{x:0,y:1.25,orientation:'h',font:{size:10}}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,3.1], fixedrange:true, tickvals:[0,1,1.6,2.6], ticktext:['Normal','Outage','I>0','I=0'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
+  } else {
+    Plotly.react('detailPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, showlegend:false, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,1.4], fixedrange:true, tickvals:[0,1], ticktext:['Normal','Outage'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
+  }
 }
 async function renderVerify(){
   const vf=document.getElementById('vf').value || (SEL.size===1 ? Array.from(SEL)[0] : '');
   if(!vf){ Plotly.purge('verifyPlot'); return; }
-  const d=await (await fetch('/api/feeder?id='+encodeURIComponent(vf), {cache:'no-store'})).json();
+  const d= TAB==='feeders'
+    ? await (await fetch('/api/feeder?id='+encodeURIComponent(vf), {cache:'no-store'})).json()
+    : await (await fetch('/api/consumer?id='+encodeURIComponent(vf), {cache:'no-store'})).json();
   const outTS=Array.from(toTS30(d.outage_ivs));
-  const czTS=Array.from(toTS30(d.cz_ivs));
+  const czTS= TAB==='feeders' ? Array.from(toTS30(d.cz_ivs)) : null;
   const xs=[], yo=[], yc=[];
-  for(let s=0;s<META.n_half;s++){ xs.push(s,s+1); yo.push(outTS[s],outTS[s]); yc.push(czTS[s]+1.6, czTS[s]+1.6); }
+  for(let s=0;s<META.n_half;s++){ xs.push(s,s+1); yo.push(outTS[s],outTS[s]); if(czTS) yc.push(czTS[s]+1.6, czTS[s]+1.6); }
   const TV=Array.from({length:30}, (_,i)=>i*48);
   const TT=Array.from({length:30}, (_,i)=>`Apr ${i+1}`);
-  Plotly.react('verifyPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'},{name:'Current=0', type:'scatter', mode:'lines', x:xs, y:yc, line:{color:'#1a7f37',width:2}, fill:'tonexty', fillcolor:'rgba(26,127,55,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, title:{text: vf + ' — verify', font:{size:13}}, showlegend:true, legend:{x:0,y:1.25,orientation:'h',font:{size:10}}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,3.1], fixedrange:true, tickvals:[0,1,1.6,2.6], ticktext:['Normal','Outage','I>0','I=0'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
+  if(TAB==='feeders'){
+    Plotly.react('verifyPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'},{name:'Current=0', type:'scatter', mode:'lines', x:xs, y:yc, line:{color:'#1a7f37',width:2}, fill:'tonexty', fillcolor:'rgba(26,127,55,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, title:{text: vf + ' — verify', font:{size:13}}, showlegend:true, legend:{x:0,y:1.25,orientation:'h',font:{size:10}}, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,3.1], fixedrange:true, tickvals:[0,1,1.6,2.6], ticktext:['Normal','Outage','I>0','I=0'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
+  } else {
+    Plotly.react('verifyPlot',[{name:'Outage', type:'scatter', mode:'lines', x:xs, y:yo, line:{color:'#d73a49',width:2}, fill:'tozeroy', fillcolor:'rgba(215,58,73,0.15)', hoverinfo:'skip'}],{paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff', margin:{l:70,r:14,t:18,b:30}, title:{text: vf + ' — verify', font:{size:13}}, showlegend:false, xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}, yaxis:{range:[-0.1,1.4], fixedrange:true, tickvals:[0,1], ticktext:['Normal','Outage'], gridcolor:'#eaeef2', tickfont:{size:9,color:'#8c959f'}}},{responsive:true,displayModeBar:false});
+  }
 }
 init();
 </script>

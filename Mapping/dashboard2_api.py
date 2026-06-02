@@ -20,6 +20,23 @@ def _dt_outage(s: str) -> pd.Timestamp:
     return pd.to_datetime(s, format="%d-%m-%Y %H:%M:%S", errors="coerce")
 
 
+def _parse_oracle_dt(s: str) -> pd.Timestamp:
+    """
+    Parse timestamps like:
+      '01-APR-26 12.14.36.000000000 AM'
+    """
+    s = str(s).strip()
+    parts = s.split(" ")
+    if len(parts) == 3:
+        date_part, time_part, ampm = parts
+        hms = time_part.split(".")[:3]
+        return pd.to_datetime(
+            f"{date_part} {':'.join(hms)} {ampm}",
+            format="%d-%b-%y %I:%M:%S %p",
+            errors="coerce",
+        )
+    return pd.NaT
+
 def _compute_outage_intervals(df: pd.DataFrame) -> dict[str, list[list[float]]]:
     out: dict[str, list[list[float]]] = {}
     for fid, g in df.groupby("device_id"):
@@ -53,6 +70,8 @@ def _slots_to_ivs(slots_sorted: list[int]) -> list[list[float]]:
 def _load_data() -> dict[str, Any]:
     outage_xlsb = HERE / "Event Feeder Outage Data of April'26.xlsb"
     blockload_xlsb = HERE / "FEEDER BLOCKLOAD DATA_April'26.xlsb"
+    consumer_outage_csv = HERE / "kashi_april_2026_consumer_outage.csv"
+    consumer_part_csv = HERE / "part-00000-d7e6c5d1-d0e5-430d-8ac3-c995d369c557-c000.csv"
 
     # Outage events
     df = pd.read_excel(outage_xlsb, engine="pyxlsb", sheet_name=0)
@@ -99,10 +118,46 @@ def _load_data() -> dict[str, Any]:
         if slots_sorted:
             cz_ivs[fid] = _slots_to_ivs(slots_sorted)
 
+    # ---- Consumer outage intervals (from kashi + part CSVs) ----
+    # Use the smaller sources (avoid Outage_Clean_Consumer.csv which is ~1.1GB).
+    c_frames: list[pd.DataFrame] = []
+    if consumer_outage_csv.exists():
+        c1 = pd.read_csv(consumer_outage_csv)
+        # expected columns: DEVICE_ID_clean, OCCU, RESTO
+        c1 = c1.rename(columns={"DEVICE_ID_clean": "device_id", "OCCU": "occu", "RESTO": "resto"})
+        c1["device_id"] = c1["device_id"].astype(str).str.strip()
+        c1["start"] = c1["occu"].apply(_parse_oracle_dt)
+        c1["end"] = c1["resto"].apply(_parse_oracle_dt)
+        c1 = c1.dropna(subset=["device_id", "start", "end"])
+        c1["duration_min"] = (c1["end"] - c1["start"]).dt.total_seconds() / 60
+        c1 = c1[c1["duration_min"] > 0].copy()
+        c_frames.append(c1[["device_id", "start", "end", "duration_min"]])
+
+    if consumer_part_csv.exists():
+        c2 = pd.read_csv(consumer_part_csv)
+        # expected columns: device_id, occurrence_time, restoration_time
+        c2["device_id"] = c2["device_id"].astype(str).str.strip()
+        c2["start"] = pd.to_datetime(c2["occurrence_time"], errors="coerce")
+        c2["end"] = pd.to_datetime(c2["restoration_time"], errors="coerce")
+        c2 = c2.dropna(subset=["device_id", "start", "end"])
+        c2["duration_min"] = (c2["end"] - c2["start"]).dt.total_seconds() / 60
+        c2 = c2[c2["duration_min"] > 0].copy()
+        c_frames.append(c2[["device_id", "start", "end", "duration_min"]])
+
+    if c_frames:
+        cdf = pd.concat(c_frames, ignore_index=True).drop_duplicates(subset=["device_id", "start", "end"])
+        consumer_ivs = _compute_outage_intervals(cdf)
+        consumer_pct = {cid: sum(e - s for s, e in ivs) / N_HOURS for cid, ivs in consumer_ivs.items()}
+    else:
+        consumer_ivs = {}
+        consumer_pct = {}
+
     return {
         "outage_ivs": outage_ivs,
         "cz_ivs": cz_ivs,
         "outage_pct": outage_pct,
+        "consumer_ivs": consumer_ivs,
+        "consumer_pct": consumer_pct,
         "generated_at": datetime.now().isoformat(timespec="seconds"),
     }
 
@@ -168,6 +223,7 @@ def meta():
         "n_half": N_HALF,
         "feeders": len(DATA["outage_ivs"]),
         "feeders_with_blockload": len(DATA["cz_ivs"]),
+        "consumers": len(DATA.get("consumer_ivs", {})),
     }
 
 
@@ -190,6 +246,26 @@ def feeder(id: str = Query(...)):
     if fid not in d["outage_ivs"]:
         raise HTTPException(status_code=404, detail="unknown feeder")
     return {"id": fid, "outage_ivs": d["outage_ivs"].get(fid, []), "cz_ivs": d["cz_ivs"].get(fid, [])}
+
+
+@app.get("/api/consumers")
+def consumers(q: str = "", limit: int = Query(300, ge=1, le=2000), offset: int = Query(0, ge=0)):
+    d = require_data()
+    ivs = d.get("consumer_ivs", {})
+    pct = d.get("consumer_pct", {})
+    items = [{"id": cid, "pct": float(pct.get(cid, 0.0))} for cid in ivs.keys() if (not q) or (q.lower() in cid.lower())]
+    items.sort(key=lambda x: x["pct"], reverse=True)
+    return {"total": len(items), "items": items[offset : offset + limit]}
+
+
+@app.get("/api/consumer")
+def consumer(id: str = Query(...)):
+    d = require_data()
+    cid = id.strip()
+    ivs = d.get("consumer_ivs", {})
+    if cid not in ivs:
+        raise HTTPException(status_code=404, detail="unknown consumer")
+    return {"id": cid, "outage_ivs": ivs.get(cid, [])}
 
 
 @app.get("/", response_class=HTMLResponse)
