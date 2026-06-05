@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Outage Dashboard 3 – Match only</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f6f8fa;color:#1f2328;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:#fff;border-bottom:1px solid #d0d7de;padding:0 16px;display:flex;align-items:center;gap:12px;height:52px;flex-shrink:0}
+header h1{font-size:13px;font-weight:600}
+.badge{background:#0969da;color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.view-toggle{display:flex;gap:1px;background:#eaeef2;border:1px solid #d0d7de;border-radius:8px;padding:3px}
+.vbtn{padding:4px 14px;border-radius:6px;border:none;background:transparent;color:#656d76;font-size:11px;cursor:pointer}
+.vbtn.active{background:#fff;color:#0969da;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.hdr-stats{margin-left:auto;display:flex;gap:14px}
+.hdr-stat-val{font-size:14px;font-weight:700;color:#0969da;text-align:right}
+.hdr-stat-lbl{font-size:9px;color:#8c959f;text-transform:uppercase}
+.layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:230px;background:#fff;border-right:1px solid #d0d7de;display:flex;flex-direction:column}
+.tab-row{display:flex;border-bottom:1px solid #eaeef2}
+.tab{flex:1;padding:7px 4px;text-align:center;font-size:10px;font-weight:600;color:#656d76;cursor:pointer;border-bottom:2px solid transparent}
+.tab.active{color:#0969da;border-bottom-color:#0969da;background:#f6f8fa}
+.search-wrap{padding:8px;border-bottom:1px solid #eaeef2}
+.search-wrap input{width:100%;padding:5px 9px;font-size:11px;border:1px solid #d0d7de;border-radius:6px}
+.show-all-btn{margin:6px 8px;padding:5px;text-align:center;font-size:10px;color:#0969da;border:1px solid #d0d7de;border-radius:6px;cursor:pointer}
+.sel-count{padding:2px 10px;font-size:9px;color:#8c959f}
+.device-list{flex:1;overflow-y:auto}
+.dev-item{padding:5px 10px;font-size:10px;cursor:pointer;display:flex;gap:6px;align-items:center;border-left:2px solid transparent}
+.dev-item:hover{background:#f6f8fa}
+.dev-item.sel{background:#dbeafe;border-left-color:#0969da}
+.dev-dot{width:6px;height:6px;border-radius:50%;background:#d73a49;flex-shrink:0}
+.dev-name{flex:1;font-family:'Courier New',monospace;font-size:10px;overflow:hidden;text-overflow:ellipsis}
+.dev-pct{font-size:9px;color:#8c959f}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.chart-area{flex:1;min-height:0;display:flex;flex-direction:column;background:#fff}
+#heatmap{flex:1;min-height:0}
+.legend-bar{padding:4px 12px;border-top:1px solid #eaeef2;background:#f6f8fa;font-size:10px;color:#656d76}
+.detail{height:200px;border-top:1px solid #d0d7de}
+.detail-hdr{padding:6px 14px;display:flex;gap:10px;border-bottom:1px solid #eaeef2}
+.detail-id{font-weight:600;font-family:'Courier New',monospace;color:#0969da;font-size:12px}
+.detail-meta{font-size:10px;color:#656d76;flex:1}
+#detailPlot{height:155px}
+#view-tl{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+#view-verify{flex:1;display:none;flex-direction:column;overflow:hidden}
+.vfy-controls{padding:8px 14px;background:#f6f8fa;border-bottom:1px solid #d0d7de;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.vfy-select{font-size:11px;padding:4px 8px;font-family:'Courier New',monospace;max-width:220px}
+.vfy-num{width:52px;font-size:11px;padding:4px 6px;border:1px solid #d0d7de;border-radius:6px}
+.vfy-lbl{font-size:11px;color:#656d76}
+.vfy-legend{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+.vfy-leg-item{display:flex;align-items:center;gap:4px;font-size:10px;color:#656d76}
+.vfy-leg-swatch{width:12px;height:12px;border-radius:2px;display:inline-block}
+.vfy-info{font-size:10px;color:#8c959f;margin-left:8px}
+#verifyPlot{flex:1;min-height:0}
+</style>
+</head>
+<body>
+<header>
+  <span class="badge">AMI</span>
+  <h1>Dashboard 3 – Outage + current match (red only)</h1>
+  <div class="view-toggle">
+    <button class="vbtn active" id="bTL" onclick="setView('tl')">⏱ Timeline</button>
+    <button class="vbtn" id="bV" onclick="setView('v')">🔍 Verify</button>
+  </div>
+  <div class="hdr-stats">
+    <div><div class="hdr-stat-val" id="sf">—</div><div class="hdr-stat-lbl">Feeders match</div></div>
+    <div><div class="hdr-stat-val" id="sc">—</div><div class="hdr-stat-lbl">Consumers match</div></div>
+    <div><div class="hdr-stat-val" id="sm">—</div><div class="hdr-stat-lbl">In list</div></div>
+  </div>
+</header>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="tab-row">
+      <div class="tab active" id="tab-feed" onclick="setTab('feeders')">Feeders</div>
+      <div class="tab" id="tab-cons" onclick="setTab('consumers')">Consumers</div>
+    </div>
+    <div class="search-wrap"><input id="q" placeholder="Search ID…" oninput="reloadList()"/></div>
+    <div class="show-all-btn" id="showTopBtn" onclick="selectTop()">▶ Show top matched</div>
+    <div class="sel-count" id="sel"></div>
+    <div class="device-list" id="list"></div>
+  </aside>
+  <main class="main">
+    <div id="view-tl">
+      <div class="chart-area">
+        <div id="heatmap"></div>
+        <div class="legend-bar">
+          <span style="display:inline-block;width:10px;height:10px;background:#f0f3f6;border:1px solid #d0d7de;border-radius:2px"></span> Normal
+          <span style="display:inline-block;width:10px;height:10px;background:#d73a49;border-radius:2px;margin-left:8px"></span>
+          🔴 Outage + current (kashi/part for consumers)
+        </div>
+      </div>
+      <div class="detail">
+        <div class="detail-hdr">
+          <span class="detail-id" id="did">—</span>
+          <span class="detail-meta" id="dmeta"></span>
+        </div>
+        <div id="detailPlot"></div>
+      </div>
+    </div>
+    <div id="view-verify">
+      <div class="vfy-controls">
+        <span class="vfy-lbl">Feeder → Consumer</span>
+        <span class="vfy-lbl">Feeder</span>
+        <select id="vfy-feeder" class="vfy-select" onchange="renderVerify()"><option value="">— pick a feeder —</option></select>
+        <span class="vfy-lbl">Top consumers</span>
+        <input id="vfy-max-cons" class="vfy-num" type="number" value="50" min="1" max="300" onchange="renderVerify()"/>
+        <div class="vfy-legend">
+          <span class="vfy-leg-item"><span class="vfy-leg-swatch" style="background:#dbeafe;border:1px solid #bfdbfe"></span>Feeder row</span>
+          <span class="vfy-leg-item"><span class="vfy-leg-swatch" style="background:#fef9c3;border:1px solid #fde68a"></span>Consumer row</span>
+          <span class="vfy-leg-item"><span class="vfy-leg-swatch" style="background:#d73a49"></span>Outage</span>
+          <span class="vfy-leg-item"><span class="vfy-leg-swatch" style="background:#eaeef2;border:1px solid #d0d7de"></span>Normal</span>
+        </div>
+        <span class="vfy-info" id="vfy-info"></span>
+      </div>
+      <div id="verifyPlot"></div>
+    </div>
+  </main>
+</div>
+<script>
+let META=null, LIST=[], SEL=new Set(), VIEW='tl', TAB='feeders', VERIFY_FEEDERS=[];
+const MATCH_CS=[[0,'#f0f3f6'],[1,'#d73a49']];
+const OUTAGE_CS=[[0,'#f0f3f6'],[1,'#d73a49']];
+
+function setView(v){
+  VIEW=v;
+  document.getElementById('bTL').classList.toggle('active', v==='tl');
+  document.getElementById('bV').classList.toggle('active', v==='v');
+  document.getElementById('view-tl').style.display = v==='tl' ? 'flex' : 'none';
+  document.getElementById('view-verify').style.display = v==='v' ? 'flex' : 'none';
+  if(v==='v'){ initVerifyFeeders(); renderVerify(); } else renderHeatmap();
+}
+
+function setTab(t){
+  TAB=t;
+  SEL.clear();
+  document.getElementById('tab-feed').classList.toggle('active', t==='feeders');
+  document.getElementById('tab-cons').classList.toggle('active', t==='consumers');
+  document.getElementById('q').value='';
+  document.getElementById('q').placeholder = t==='feeders' ? 'Search feeder ID…' : 'Search consumer ID…';
+  document.getElementById('showTopBtn').textContent = t==='feeders' ? '▶ Show top matched feeders' : '▶ Show top matched consumers';
+  updateSel();
+  reloadList();
+  if(VIEW==='v') renderVerify(); else renderHeatmap();
+}
+
+function tabReady(){
+  return TAB==='feeders'
+    ? META && META.feeders_overlap_ready
+    : META && META.consumers_ready && META.consumers_overlap_ready;
+}
+
+function listUrl(q, limit){
+  const base = TAB==='feeders' ? '/api/feeders' : '/api/consumers';
+  return `${base}?q=${encodeURIComponent(q)}&limit=${limit}&offset=0`;
+}
+
+function deviceUrl(id){
+  return TAB==='feeders'
+    ? '/api/feeder?id='+encodeURIComponent(id)
+    : '/api/consumer?id='+encodeURIComponent(id);
+}
+
+function toTS30(ivs){
+  const a=new Int8Array(META.n_half);
+  if(!ivs) return a;
+  for(const [s,e] of ivs){
+    const ss=Math.max(0, Math.floor(s*2));
+    const ee=Math.min(META.n_half, Math.ceil(e*2));
+    for(let i=ss;i<ee;i++) a[i]=1;
+  }
+  return a;
+}
+
+function totalH(ivs){ return ivs ? ivs.reduce((t,[s,e])=>t+(e-s),0) : 0; }
+function fmtH(h){ return h<1 ? `${Math.round(h*60)}m` : `${h.toFixed(1)}h`; }
+
+async function refreshMeta(){
+  META=await (await fetch('/api/meta',{cache:'no-store'})).json();
+  document.getElementById('sf').textContent=(META.feeders_with_match||0).toLocaleString();
+  document.getElementById('sc').textContent=(META.consumers_with_match||0).toLocaleString();
+  return META;
+}
+
+async function init(){
+  const statusEl=document.getElementById('dmeta');
+  for(;;){
+    try{
+      await refreshMeta();
+      if(META.error){ statusEl.textContent='API error: '+META.error; return; }
+      if(META.feeders_overlap_ready) break;
+      statusEl.textContent='Loading feeder match index…';
+    }catch(e){ statusEl.textContent='Connecting…'; }
+    await new Promise(r=>setTimeout(r, 1500));
+  }
+  statusEl.textContent='';
+  await reloadList();
+  pollConsumers();
+}
+
+async function pollConsumers(){
+  if(META.consumers_overlap_ready) return;
+  for(let i=0;i<180;i++){
+    await new Promise(r=>setTimeout(r, 2000));
+    await refreshMeta();
+    document.getElementById('sc').textContent=(META.consumers_with_match||0).toLocaleString();
+    if(META.consumers_overlap_ready){
+      if(TAB==='consumers') reloadList();
+      return;
+    }
+  }
+}
+
+async function reloadList(){
+  if(!tabReady()){
+    await refreshMeta();
+    if(!tabReady()){
+      document.getElementById('list').innerHTML='<div class="dev-item" style="color:#656d76;padding:10px">Loading '+TAB+'…</div>';
+      await new Promise(r=>setTimeout(r, 800));
+      return reloadList();
+    }
+  }
+  const q=document.getElementById('q').value||'';
+  const r=await fetch(listUrl(q,800),{cache:'no-store'});
+  const j=await r.json();
+  if(j.loading){
+    document.getElementById('list').innerHTML='<div class="dev-item" style="color:#656d76;padding:10px">Loading…</div>';
+    await new Promise(r=>setTimeout(r, 800));
+    return reloadList();
+  }
+  LIST=j.items||[];
+  document.getElementById('sm').textContent=LIST.length.toLocaleString();
+  const root=document.getElementById('list');
+  root.innerHTML='';
+  LIST.forEach(it=>{
+    const div=document.createElement('div');
+    div.className='dev-item'+(SEL.has(it.id)?' sel':'');
+    div.innerHTML=`<span class="dev-dot"></span><span class="dev-name" title="${it.id}">${it.id}</span><span class="dev-pct">${(it.pct*100).toFixed(1)}%</span>`;
+    div.onclick=()=>{ if(SEL.has(it.id)) SEL.delete(it.id); else SEL.add(it.id); updateSel(); if(VIEW==='v'){} else renderHeatmap(); reloadList(); };
+    root.appendChild(div);
+  });
+  updateSel();
+}
+
+async function initVerifyFeeders(){
+  const sel=document.getElementById('vfy-feeder');
+  if(sel.options.length>1) return;
+  try{
+    const j=await (await fetch('/api/verify/feeders?limit=2000',{cache:'no-store'})).json();
+    VERIFY_FEEDERS=j.items||[];
+    VERIFY_FEEDERS.forEach(it=>{
+      const o=document.createElement('option');
+      o.value=it.id;
+      o.textContent=`${it.id} (${it.n_consumers} cons)`;
+      sel.appendChild(o);
+    });
+    if(!VERIFY_FEEDERS.length){
+      document.getElementById('vfy-info').textContent='Run topology_mapping.py to build verify map';
+    }
+  }catch(e){
+    document.getElementById('vfy-info').textContent='Verify map unavailable';
+  }
+}
+
+function updateSel(){ document.getElementById('sel').textContent=SEL.size?`${SEL.size} selected`:''; }
+
+function selectTop(){
+  SEL.clear();
+  LIST.slice(0,120).forEach(it=>SEL.add(it.id));
+  updateSel();
+  if(VIEW==='v') renderVerify(); else renderHeatmap();
+  reloadList();
+}
+
+function buildMatchTraces(matchTS, label){
+  const dotX=[], dotY=[];
+  for(let i=0;i<META.n_half;i++){
+    if(matchTS[i]){ dotX.push(i+0.5); dotY.push(0.5); }
+  }
+  return {
+    data:[
+      {name:label, type:'scatter', mode:'markers', x:dotX, y:dotY,
+       marker:{color:'#d73a49',size:6,symbol:'circle'},
+       text:dotX.map(()=>'🔴 '+label),
+       hovertemplate:'%{text}<extra></extra>'},
+    ],
+    layout:{
+      paper_bgcolor:'#fff', plot_bgcolor:'#f6f8fa', margin:{l:50,r:14,t:18,b:30},
+      showlegend:true, legend:{x:0,y:1.15,orientation:'h',font:{size:10}},
+      xaxis:{tickvals:Array.from({length:30},(_,i)=>i*48), ticktext:Array.from({length:30},(_,i)=>`Apr ${i+1}`), range:[0,META.n_half], gridcolor:'#eaeef2'},
+      yaxis:{range:[-0.1,1.2], fixedrange:true, showticklabels:false, gridcolor:'#eaeef2'},
+    },
+  };
+}
+
+const matchLabel = () => TAB==='feeders'
+  ? 'Outage + I=0 (feeder)'
+  : 'Outage + current (consumer)';
+
+async function fetchDevice(id){
+  const r=await fetch(deviceUrl(id),{cache:'no-store'});
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function renderHeatmap(){
+  const ids=Array.from(SEL);
+  if(!ids.length){
+    Plotly.purge('heatmap'); Plotly.purge('detailPlot');
+    document.getElementById('did').textContent='—';
+    document.getElementById('dmeta').textContent='Select devices with outage+current match';
+    return;
+  }
+  const X=Array.from({length:META.n_half},(_,i)=>i);
+  const TV=Array.from({length:30},(_,i)=>i*48);
+  const TT=Array.from({length:30},(_,i)=>`Apr ${i+1}`);
+  const rows=[];
+  for(const id of ids){
+    const d=await fetchDevice(id);
+    rows.push({id, z:Array.from(toTS30(d.outage_ivs))});
+  }
+  Plotly.react('heatmap', [{
+    type:'heatmap', z:rows.map(r=>r.z), y:rows.map(r=>r.id), x:X,
+    colorscale:MATCH_CS, zmin:0, zmax:1, showscale:false,
+    text:rows.map(r=>r.z.map(v=>v?'🔴 Match':'Normal')),
+    hovertemplate:'<b>%{y}</b><br>%{text}<extra></extra>',
+    xgap:0, ygap:ids.length>60?0:0.5,
+  }], {
+    paper_bgcolor:'#fff', plot_bgcolor:'#f6f8fa', margin:{l:140,r:20,t:10,b:46},
+    xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half]},
+    yaxis:{automargin:true, tickfont:{size:9,family:'Courier New'}},
+  }, {responsive:true, displayModeBar:true, modeBarButtonsToRemove:['select2d','lasso2d','toImage'], displaylogo:false});
+  document.getElementById('heatmap').on('plotly_click', ev=>{ if(ev.points?.length) showDetail(ev.points[0].y); });
+  if(ids.length===1) showDetail(ids[0]);
+}
+
+async function showDetail(id){
+  const d=await fetchDevice(id);
+  const label=matchLabel();
+  document.getElementById('did').textContent=id;
+  const matchTS=Array.from(toTS30(d.outage_ivs));
+  const matchH=totalH(d.outage_ivs);
+  const slots=matchTS.filter(v=>v).length;
+  document.getElementById('dmeta').textContent=
+    `🔴 ${label}: ${fmtH(matchH)} (${(matchH/META.n_hours*100).toFixed(1)}%) · ${slots} slots`;
+  const tr=buildMatchTraces(matchTS, label);
+  Plotly.react('detailPlot', tr.data, tr.layout, {responsive:true, displayModeBar:false});
+}
+
+async function renderVerify(){
+  const feederId=document.getElementById('vfy-feeder').value;
+  const infoEl=document.getElementById('vfy-info');
+  if(!feederId){ Plotly.purge('verifyPlot'); infoEl.textContent=''; return; }
+  const MAX=Math.max(1, parseInt(document.getElementById('vfy-max-cons').value)||50);
+  const r=await fetch(`/api/verify/feeder?id=${encodeURIComponent(feederId)}&limit=${MAX}`,{cache:'no-store'});
+  if(!r.ok){ infoEl.textContent='Feeder not in verify map'; Plotly.purge('verifyPlot'); return; }
+  const d=await r.json();
+  const rows=[], shapes=[];
+  rows.push({label:`⚡ ${feederId}`, ts:Array.from(toTS30(d.feeder_event_ivs))});
+  shapes.push({type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:-0.5,y1:0.5,fillcolor:'rgba(9,105,218,0.07)',line:{width:0},layer:'below'});
+  shapes.push({type:'line',xref:'paper',x0:0,x1:1,yref:'y',y0:0.5,y1:0.5,line:{color:'#c6cdd5',width:1.5},layer:'above'});
+  (d.consumers||[]).forEach((con,i)=>{
+    const ri=i+1;
+    shapes.push({type:'rect',xref:'paper',x0:0,x1:1,yref:'y',y0:ri-0.5,y1:ri+0.5,fillcolor:'rgba(227,179,65,0.05)',line:{width:0},layer:'below'});
+    rows.push({label:`  👤 ${con.id}`, ts:Array.from(toTS30(con.outage_ivs))});
+  });
+  infoEl.textContent=
+    `${rows.length} rows · feeder row + ${(d.consumers||[]).length} matched consumers`+
+    (d.total_consumers>MAX ? ` (of ${d.total_consumers} total)` : '')+
+    ` · event ${d.event_start?.slice(5,16)||''}`;
+  renderVerifyHeatmap(rows, shapes);
+}
+
+function renderVerifyHeatmap(rows, shapes){
+  const z=rows.map(r=>r.ts);
+  const yidx=rows.map((_,i)=>i);
+  const ytext=rows.map(r=>r.label);
+  const n=rows.length;
+  const htxt=z.map(row=>row.map(v=>v?'🔴 Outage':'✅ Normal'));
+  const X=Array.from({length:META.n_half},(_,i)=>i);
+  const TV=Array.from({length:30},(_,i)=>i*48);
+  const TT=Array.from({length:30},(_,i)=>`Apr ${i+1}`);
+  const ygap=n>100?0:n>40?0.3:0.5;
+  const tfsz=n>100?7:n>50?8:9;
+  Plotly.purge('verifyPlot');
+  Plotly.newPlot('verifyPlot',[{
+    type:'heatmap', z, y:yidx, x:X,
+    colorscale:OUTAGE_CS, zmin:0, zmax:1, showscale:false, xgap:0, ygap,
+    hovertemplate:'<b>%{customdata}</b><br>%{text}<extra></extra>',
+    customdata:ytext, text:htxt,
+  }],{
+    paper_bgcolor:'#fff', plot_bgcolor:'#fff', margin:{l:175,r:10,t:10,b:46},
+    xaxis:{tickvals:TV, ticktext:TT, range:[0,META.n_half], gridcolor:'#eaeef2'},
+    yaxis:{tickvals:yidx, ticktext:ytext, range:[n-0.5,-0.5], fixedrange:true,
+           tickfont:{size:tfsz,family:'Courier New'}, gridcolor:'rgba(0,0,0,0)'},
+    shapes,
+  },{responsive:true, displayModeBar:false});
+}
+
+init();
+</script>
+</body>
+</html>

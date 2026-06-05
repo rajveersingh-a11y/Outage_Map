@@ -7,7 +7,9 @@ import pandas as pd
 import numpy as np
 from datetime import timedelta
 from pathlib import Path
+from typing import Any
 import os
+import pickle
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -289,6 +291,182 @@ def apply_hierarchy_consistency(feeder_dt: pd.DataFrame,
     return fc.sort_values(["up_id", "score"], ascending=[True, False])
 
 
+# ── Verify: primary feeder outage event → matched consumers ───────────────────
+START_MONTH = pd.Timestamp(2026, 4, 1, 0, 0, 0)
+VERIFY_PRIMARY_CSV = "verify_feeder_primary_event.csv"
+VERIFY_CONSUMERS_CSV = "verify_feeder_event_consumers.csv"
+VERIFY_MAP_PKL = "verify_feeder_consumer_map.pkl"
+
+
+def _events_by_device(df: pd.DataFrame) -> dict[str, list[tuple]]:
+    out: dict[str, list[tuple]] = {}
+    for did, g in df.groupby("device_id"):
+        out[str(did)] = list(zip(g["start"], g["end"], g["duration_min"]))
+    return out
+
+
+def _build_consumer_day_index(
+    consumer_events: dict[str, list[tuple]],
+) -> dict:
+    """Map calendar day → consumer events active that day (± lag tolerance)."""
+    tol = timedelta(minutes=LAG_WINDOW_MIN + TIME_TOL_MIN)
+    idx: dict = {}
+    for cid, evs in consumer_events.items():
+        for us, ue, ud in evs:
+            cur = (us - tol).date()
+            end = ue.date()
+            while cur <= end:
+                idx.setdefault(cur, []).append((cid, us, ue, ud))
+                cur += timedelta(days=1)
+    return idx
+
+
+def _event_days(us: pd.Timestamp, ue: pd.Timestamp) -> list:
+    tol = timedelta(minutes=LAG_WINDOW_MIN + TIME_TOL_MIN)
+    days: list = []
+    cur = (us - tol).date()
+    end = ue.date()
+    while cur <= end:
+        days.append(cur)
+        cur += timedelta(days=1)
+    return days
+
+
+def consumers_for_feeder_event(
+    us: pd.Timestamp,
+    ue: pd.Timestamp,
+    ud: float,
+    day_index: dict,
+) -> list[dict]:
+    """Consumers whose outage overlaps this single feeder event."""
+    candidates: dict[str, list[tuple]] = {}
+    for d in _event_days(us, ue):
+        for cid, ds, de, dd in day_index.get(d, []):
+            candidates.setdefault(cid, []).append((ds, de, dd))
+
+    matched: list[dict] = []
+    for cid, evs in candidates.items():
+        best_ratio = 0.0
+        best_min = 0.0
+        best_score = 0.0
+        for ds, de, dd in evs:
+            gap = abs((ds - us).total_seconds() / 60)
+            if gap > (LAG_WINDOW_MIN + TIME_TOL_MIN):
+                continue
+            ov_min, ov_ratio, lag = compute_overlap(us, ue, ds, de)
+            if ov_ratio < MIN_OVERLAP_FRAC:
+                continue
+            dur_sim = duration_similarity(ud, dd)
+            lag_pen = min(1.0, lag / LAG_WINDOW_MIN)
+            score = float(np.clip(ALPHA * ov_ratio + BETA * dur_sim - DELTA * lag_pen, 0, 1))
+            if ov_ratio > best_ratio:
+                best_ratio = ov_ratio
+                best_min = ov_min
+                best_score = score
+        if best_ratio > 0:
+            matched.append(
+                {
+                    "consumer_id": cid,
+                    "overlap_ratio": round(best_ratio, 4),
+                    "overlap_min": round(best_min, 1),
+                    "score": round(best_score, 4),
+                }
+            )
+    matched.sort(key=lambda x: (-x["score"], -x["overlap_ratio"]))
+    return matched
+
+
+def pick_primary_feeder_event(
+    feeder_events: list[tuple],
+    day_index: dict,
+) -> tuple[pd.Timestamp, pd.Timestamp, float, list[dict]] | None:
+    """One feeder outage event: most consumers overlapping; tie-break by duration."""
+    if not feeder_events:
+        return None
+    best: tuple | None = None
+    best_key = (-1, -1.0)
+    for us, ue, ud in feeder_events:
+        matched = consumers_for_feeder_event(us, ue, ud, day_index)
+        key = (len(matched), float(ud))
+        if key > best_key:
+            best_key = key
+            best = (us, ue, ud, matched)
+    return best
+
+
+def build_verify_feeder_consumer_mapping(
+    feeders: pd.DataFrame,
+    consumers: pd.DataFrame,
+    out_dir: str | None = None,
+) -> dict[str, Any]:
+    """
+    For each feeder pick ONE primary outage event and store consumers
+    with simultaneous (overlapping) outage. Writes CSV + pickle for Dashboard 3 verify.
+    """
+    out_dir = out_dir or DATA_DIR
+    feeder_events = _events_by_device(feeders)
+    consumer_events = _events_by_device(consumers)
+    day_index = _build_consumer_day_index(consumer_events)
+
+    primary_rows: list[dict] = []
+    consumer_rows: list[dict] = []
+    verify_map: dict[str, Any] = {}
+
+    n_feeders = len(feeder_events)
+    print(f"  Verify mapping: {n_feeders} feeders × consumer events …", flush=True)
+    for i, (fid, fevs) in enumerate(feeder_events.items()):
+        picked = pick_primary_feeder_event(fevs, day_index)
+        if picked is None:
+            continue
+        us, ue, ud, matched = picked
+        if not matched:
+            continue
+        primary_rows.append(
+            {
+                "feeder_id": fid,
+                "event_start": us.isoformat(sep=" "),
+                "event_end": ue.isoformat(sep=" "),
+                "duration_min": round(float(ud), 1),
+                "n_matched_consumers": len(matched),
+            }
+        )
+        verify_map[fid] = {
+            "event_start": us.isoformat(sep=" "),
+            "event_end": ue.isoformat(sep=" "),
+            "duration_min": round(float(ud), 1),
+            "n_matched_consumers": len(matched),
+            "consumers": matched,
+        }
+        for m in matched:
+            consumer_rows.append(
+                {
+                    "feeder_id": fid,
+                    "event_start": us.isoformat(sep=" "),
+                    "event_end": ue.isoformat(sep=" "),
+                    "consumer_id": m["consumer_id"],
+                    "overlap_ratio": m["overlap_ratio"],
+                    "overlap_min": m["overlap_min"],
+                    "score": m["score"],
+                }
+            )
+
+        if i and i % 100 == 0:
+            print(f"    … {i}/{n_feeders} feeders", flush=True)
+
+    primary_df = pd.DataFrame(primary_rows)
+    consumers_df = pd.DataFrame(consumer_rows)
+    primary_df.to_csv(out_dir + VERIFY_PRIMARY_CSV, index=False)
+    consumers_df.to_csv(out_dir + VERIFY_CONSUMERS_CSV, index=False)
+
+    with open(out_dir + VERIFY_MAP_PKL, "wb") as f:
+        pickle.dump(verify_map, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    print(f"  Wrote: {out_dir}{VERIFY_PRIMARY_CSV} ({len(primary_df)} feeders)")
+    print(f"  Wrote: {out_dir}{VERIFY_CONSUMERS_CSV} ({len(consumers_df)} rows)")
+    print(f"  Wrote: {out_dir}{VERIFY_MAP_PKL}")
+    return verify_map
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
     print("Loading data …")
@@ -310,6 +488,10 @@ def main():
     print(f"  Feeders:   {len(feeders):,} events, {feeders['device_id'].nunique()} devices")
     print(f"  DTRs:      {len(dtrs):,} events, {dtrs['device_id'].nunique()} devices")
     print(f"  Consumers: {len(consumers):,} events, {consumers['device_id'].nunique()} devices")
+
+    if not consumers.empty:
+        print("\nBuilding verify feeder→consumer event mapping (one event per feeder) …")
+        build_verify_feeder_consumer_mapping(feeders, consumers, out_dir=DATA_DIR)
 
     # Always emit a normalized feeder outage export for reuse.
     feeders_out = feeders[["device_id", "start", "end", "duration_min"]].copy()
